@@ -75,6 +75,7 @@ typedef struct
 #define STYLE_BACKGROUND  16
 #define STYLE_UNDERLINE   32
 #define STYLE_STRIKEOUT   64
+#define STYLE_HALFWIDTH   128
 
 /**
  * Create a default text style
