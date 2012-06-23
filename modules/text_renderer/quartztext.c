@@ -80,6 +80,7 @@ static int RenderYUVA(filter_t *p_filter, subpicture_region_t *p_region,
 
 static void setFontAttributes(char *psz_fontname, int i_font_size, uint32_t i_font_color,
                                bool b_bold, bool b_italic, bool b_underline, bool b_halfwidth,
+                               int i_spacing,
                                CFRange p_range, CFMutableAttributedStringRef p_attrString);
 
 /*****************************************************************************
@@ -100,6 +101,8 @@ static void setFontAttributes(char *psz_fontname, int i_font_size, uint32_t i_fo
     "the video. This must be an hexadecimal (like HTML colors). The first two "\
     "chars are for red, then green, then blue. #000000 = black, #FF0000 = red,"\
     " #00FF00 = green, #FFFF00 = yellow (red + green), #FFFFFF = white")
+#define OUTLINE_TEXT N_("Add outline")
+#define SHADOW_TEXT N_("Add shadow")
 
 static const int pi_color_values[] = {
   0x00000000, 0x00808080, 0x00C0C0C0, 0x00FFFFFF, 0x00800000,
@@ -134,6 +137,8 @@ vlc_module_begin ()
     add_integer("quartztext-color", 0x00FFFFFF, COLOR_TEXT,
                  COLOR_LONGTEXT, false)
         change_integer_list(pi_color_values, ppsz_color_descriptions)
+    add_bool("quartztext-outline", false, OUTLINE_TEXT, NULL, false)
+    add_bool("quartztext-shadow", true, SHADOW_TEXT, NULL, false)
     set_capability("text renderer", 50)
     add_shortcut("text")
     set_callbacks(Create, Destroy)
@@ -181,6 +186,8 @@ struct filter_sys_t
     uint8_t        i_font_opacity;
     int            i_font_color;
     int            i_font_size;
+    bool           b_outline;
+    bool           b_shadow;
 
 #ifndef TARGET_OS_IPHONE
     ATSFontContainerRef    *p_fonts;
@@ -205,6 +212,8 @@ static int Create(vlc_object_t *p_this)
     p_sys->psz_font_name  = var_CreateGetString(p_this, "quartztext-font");
     p_sys->i_font_opacity = 255;
     p_sys->i_font_color = VLC_CLIP(var_CreateGetInteger(p_this, "quartztext-color") , 0, 0xFFFFFF);
+    p_sys->b_outline = var_InheritBool(p_this, "quartztext-outline");
+    p_sys->b_shadow = var_InheritBool(p_this, "quartztext-shadow");
     p_sys->i_font_size    = GetFontSize(p_filter);
 
     p_filter->pf_render_text = RenderText;
@@ -308,16 +317,19 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
                        subpicture_region_t *p_region_in,
                        const vlc_fourcc_t *p_chroma_list)
 {
+    VLC_UNUSED(p_chroma_list);
     filter_sys_t *p_sys = p_filter->p_sys;
     char         *psz_string;
     int           i_font_alpha, i_font_size;
     uint32_t      i_font_color;
     bool          b_bold, b_uline, b_italic;
     bool          b_halfwidth;
+    int           i_spacing;
     vlc_value_t val;
     b_bold = b_uline = b_italic = FALSE;
     VLC_UNUSED(p_chroma_list);
     b_halfwidth = FALSE;
+    i_spacing = 0;
 
     p_sys->i_font_size    = GetFontSize(p_filter);
 
@@ -343,6 +355,7 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
             if (p_region_in->p_style->i_style_flags & STYLE_HALFWIDTH)
                 b_halfwidth = TRUE;
         }
+        i_spacing = VLC_CLIP(p_region_in->p_style->i_spacing, 0, 255);
     } else {
         i_font_color = p_sys->i_font_color;
         i_font_alpha = 255 - p_sys->i_font_opacity;
@@ -376,6 +389,7 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
         len = CFAttributedStringGetLength(p_attrString);
 
         setFontAttributes(p_sys->psz_font_name, i_font_size, i_font_color, b_bold, b_italic, b_uline, b_halfwidth,
+                           i_spacing,
                            CFRangeMake(0, len), p_attrString);
 
         RenderYUVA(p_filter, p_region_out, p_attrString);
@@ -533,6 +547,7 @@ static int HandleFontAttributes(xml_reader_t *p_xml_reader,
 
 static void setFontAttributes(char *psz_fontname, int i_font_size, uint32_t i_font_color,
         bool b_bold, bool b_italic, bool b_underline, bool b_halfwidth,
+        int i_spacing,
         CFRange p_range, CFMutableAttributedStringRef p_attrString)
 {
     CFStringRef p_cfString;
@@ -615,6 +630,18 @@ static void setFontAttributes(char *psz_fontname, int i_font_size, uint32_t i_fo
                                     fg_text);
     CFRelease(fg_text);
 
+    // spacing
+    if (i_spacing > 0)
+    {
+        CGFloat spacing = i_spacing;
+        CFNumberRef spacingCFNum = CFNumberCreate(NULL,
+                kCFNumberCGFloatType, &spacing);
+        CFAttributedStringSetAttribute(p_attrString,
+                                        p_range,
+                                        kCTKernAttributeName,
+                                        spacingCFNum);
+        CFRelease(spacingCFNum);
+    }
 }
 
 static void GetAttrStrFromFontStack(font_stack_t **p_fonts,
@@ -633,6 +660,7 @@ static void GetAttrStrFromFontStack(font_stack_t **p_fonts,
                           i_font_color,
                           b_bold, b_italic, b_uline,
                           FALSE,
+                          0,
                           p_range,
                           p_attrString);
     }
@@ -765,6 +793,7 @@ static int RenderHtml(filter_t *p_filter, subpicture_region_t *p_region_out,
                        subpicture_region_t *p_region_in,
                        const vlc_fourcc_t *p_chroma_list)
 {
+    VLC_UNUSED(p_chroma_list);
     int          rv = VLC_SUCCESS;
     stream_t     *p_sub = NULL;
     xml_t        *p_xml = NULL;
@@ -921,8 +950,19 @@ static offscreen_bitmap_t *Compose(filter_t *p_filter,
             CGPathRelease(p_path);
 
             // Set up black outlining of the text --
-            CGContextSetRGBStrokeColor(p_context, 0, 0, 0, 0.5);
-            CGContextSetTextDrawingMode(p_context, kCGTextFillStroke);
+            if (p_sys->b_outline)
+            {
+                CGContextSetRGBStrokeColor(p_context, 0, 0, 0, 0.5);
+                CGContextSetTextDrawingMode(p_context, kCGTextFillStroke);
+            }
+
+            // Shadow
+            if (p_sys->b_shadow)
+            {
+                // TODO: Use CGContextSetShadowWithColor.
+                // TODO: Use user defined parrameters (color, distance, etc.)
+                CGContextSetShadow(p_context, CGSizeMake(3.0f, -3.0f), 2.0f);
+            }
 
             if (frame != NULL) {
                 CFArrayRef lines;
