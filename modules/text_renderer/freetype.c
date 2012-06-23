@@ -2379,7 +2379,11 @@ static int ProcessLines( filter_t *p_filter,
                 /* Get kerning vector */
                 FT_Vector kerning = { .x = 0, .y = 0 };
                 if( FT_HAS_KERNING( p_current_face ) && i_glyph_last != 0 && i_glyph_index != 0 )
+                {
                     FT_Get_Kerning( p_current_face, i_glyph_last, i_glyph_index, ft_kerning_default, &kerning );
+                    if( p_glyph_style->i_spacing > 0 )
+                        kerning.x = (p_glyph_style->i_spacing / 4 ) << 6;
+                }
 
                 /* Get the glyph bitmap and its bounding box and all the associated properties */
                 FT_Vector pen_new = {
@@ -2699,6 +2703,7 @@ static int RenderCommon( filter_t *p_filter, subpicture_region_t *p_region_out,
     {
         text_style_t *p_style;
         if( p_region_in->p_style )
+        {
             p_style = CreateStyle( p_region_in->p_style->psz_fontname,
                                    p_region_in->p_style->i_font_size > 0 ? p_region_in->p_style->i_font_size
                                                                          : p_sys->i_font_size,
@@ -2710,6 +2715,8 @@ static int RenderCommon( filter_t *p_filter, subpicture_region_t *p_region_out,
                                                                           STYLE_UNDERLINE |
                                                                           STYLE_STRIKEOUT |
                                                                           STYLE_HALFWIDTH) );
+            p_style->i_spacing = p_region_in->p_style->i_spacing;
+        }
         else
         {
             uint32_t i_font_color = var_InheritInteger( p_filter, "freetype-color" );
