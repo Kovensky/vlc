@@ -76,6 +76,8 @@ VLC_FORMAT(1, 2) static void ts_debug(const char *format, ...)
 #endif
 }
 
+#include "../codec/aribb24dec.h"
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
@@ -132,6 +134,11 @@ static void Close ( vlc_object_t * );
     "Seek and position based on a percent byte position, not a PCR generated " \
     "time position. If seeking doesn't work property, turn on this option." )
 
+#define SUPPORT_ARIB_TEXT N_("Support ARIB STD-B24.")
+#define SUPPORT_ARIB_LONGTEXT N_( \
+    "Support ARIB STD-B24 for decoding characters." \
+    "This feature affect EPG information and subtitle." )
+
 
 vlc_module_begin ()
     set_description( N_("MPEG Transport Stream demuxer") )
@@ -155,6 +162,7 @@ vlc_module_begin ()
 
     add_bool( "ts-split-es", true, SPLIT_ES_TEXT, SPLIT_ES_LONGTEXT, false )
     add_bool( "ts-seek-percent", false, SEEK_PERCENT_TEXT, SEEK_PERCENT_LONGTEXT, true )
+    add_bool( "ts-support-arib", false, SUPPORT_ARIB_TEXT, SUPPORT_ARIB_LONGTEXT, true )
 
     add_obsolete_bool( "ts-silent" );
 
@@ -293,6 +301,8 @@ struct demux_sys_t
     int         i_pcrs_num;
     mtime_t     *p_pcrs;
     int64_t     *p_pos;
+
+    bool        b_support_arib;
 
     /* All pid */
     ts_pid_t    pid[8192];
@@ -790,10 +800,11 @@ static int Open( vlc_object_t *p_this )
     p_sys->i_pcrs_num = 10;
     p_sys->p_pcrs = (mtime_t *)calloc( p_sys->i_pcrs_num, sizeof( mtime_t ) );
     p_sys->p_pos = (int64_t *)calloc( p_sys->i_pcrs_num, sizeof( int64_t ) );
+    p_sys->b_support_arib = var_InheritBool( p_demux, "ts-support-arib" );
 
     bool can_seek = false;
-    stream_Control( p_demux->s, STREAM_CAN_FASTSEEK, &can_seek );
-    if( can_seek  )
+    stream_Control( p_demux->s, STREAM_CAN_SEEK, &can_seek );
+    if( can_seek && !p_sys->b_force_seek_per_percent )
     {
         GetFirstPCR( p_demux );
         if( p_sys->i_first_pcr < 0 )
@@ -1549,6 +1560,7 @@ static void PIDClean( demux_t *p_demux, ts_pid_t *pid )
     pid->b_valid = false;
 }
 
+
 /****************************************************************************
  * gathering stuff
  ****************************************************************************/
@@ -1753,6 +1765,22 @@ static void ParsePES( demux_t *p_demux, ts_pid_t *pid, block_t *p_pes )
                         break;
                     }
                 }
+            }
+        }
+        else if( pid->es->fmt.i_codec == VLC_CODEC_ARIB_A ||
+                 pid->es->fmt.i_codec == VLC_CODEC_ARIB_C )
+        {
+            if( p_block->i_pts <= VLC_TS_INVALID )
+            {
+                if( i_pes_size > 0 && p_block->i_buffer > i_pes_size )
+                {
+                    p_block->i_buffer = i_pes_size;
+                }
+                /* Append a \0 */
+                p_block = block_Realloc( p_block, 0, p_block->i_buffer + 1 );
+                if( !p_block )
+                    abort();
+                p_block->p_buffer[p_block->i_buffer -1] = '\0';
             }
         }
 
@@ -2751,10 +2779,34 @@ static void ValidateDVBMeta( demux_t *p_demux, int i_pid )
 
 #include "dvb-text.h"
 
-static char *EITConvertToUTF8( const unsigned char *psz_instring,
+static char *EITConvertToUTF8( demux_t *p_demux,
+                               const unsigned char *psz_instring,
                                size_t i_length,
                                bool b_broken )
 {
+    demux_sys_t *p_sys = p_demux->p_sys;
+    if( p_sys->b_support_arib )
+    {
+        char *psz_outstring;
+        size_t i_out;
+
+        i_out = i_length * 4;
+        psz_outstring = (char*) calloc( i_out + 1, sizeof(char) );
+        if( !psz_outstring )
+            return NULL;
+
+        arib_decoder_t decoder;
+        arib_initialize_decoder( &decoder );
+        i_out = arib_decode_buffer( &decoder,
+                                    psz_instring,
+                                    i_length,
+                                    psz_outstring,
+                                    i_out );
+        psz_outstring[i_out] = '\0';
+        arib_finalize_decoder( &decoder );
+        return psz_outstring;
+    }
+
     /* Deal with no longer broken providers (no switch byte
       but sending ISO_8859-1 instead of ISO_6937) without
       removing them from the broken providers table
@@ -2860,10 +2912,14 @@ static void SDTCallBack( demux_t *p_demux, dvbpsi_sdt_t *p_sdt )
 
                 /* FIXME: Digital+ ES also uses ISO8859-1 */
 
-                str1 = EITConvertToUTF8(pD->i_service_provider_name,
+                str1 = EITConvertToUTF8(
+                                        p_demux,
+                                        pD->i_service_provider_name,
                                         pD->i_service_provider_name_length,
                                         p_sys->b_broken_charset );
-                str2 = EITConvertToUTF8(pD->i_service_name,
+                str2 = EITConvertToUTF8(
+                                        p_demux,
+                                        pD->i_service_name,
                                         pD->i_service_name_length,
                                         p_sys->b_broken_charset );
 
@@ -3012,6 +3068,13 @@ static void EITCallBack( demux_t *p_demux,
         int i_min_age = 0;
 
         i_start = EITConvertStartTime( p_evt->i_start_time );
+        if( p_sys->b_support_arib )
+        {
+            //i_start -= 9 * 60 * 60; // JST -> UTC
+            time_t timer = time( NULL );
+            i_start -= difftime( mktime( localtime( &timer ) ),
+                                 mktime( gmtime( &timer ) ) );
+        }
         i_duration = EITConvertDuration( p_evt->i_duration );
 
         msg_Dbg( p_demux, "  * event id=%d start_time:%d duration=%d "
@@ -3029,9 +3092,13 @@ static void EITCallBack( demux_t *p_demux,
                    for epg atm*/
                 if( pE && psz_name == NULL)
                 {
-                    psz_name = EITConvertToUTF8( pE->i_event_name, pE->i_event_name_length,
+                    psz_name = EITConvertToUTF8(
+                                                 p_demux,
+                                                 pE->i_event_name, pE->i_event_name_length,
                                                  p_sys->b_broken_charset );
-                    psz_text = EITConvertToUTF8( pE->i_text, pE->i_text_length,
+                    psz_text = EITConvertToUTF8(
+                                                 p_demux,
+                                                 pE->i_text, pE->i_text_length,
                                                  p_sys->b_broken_charset );
                     msg_Dbg( p_demux, "    - short event lang=%3.3s '%s' : '%s'",
                              pE->i_iso_639_code, psz_name, psz_text );
@@ -3048,7 +3115,9 @@ static void EITCallBack( demux_t *p_demux,
 
                     if( pE->i_text_length > 0 )
                     {
-                        char *psz_text = EITConvertToUTF8( pE->i_text, pE->i_text_length,
+                        char *psz_text = EITConvertToUTF8(
+                                                           p_demux,
+                                                           pE->i_text, pE->i_text_length,
                                                            p_sys->b_broken_charset );
                         if( psz_text )
                         {
@@ -3063,10 +3132,14 @@ static void EITCallBack( demux_t *p_demux,
 
                     for( int i = 0; i < pE->i_entry_count; i++ )
                     {
-                        char *psz_dsc = EITConvertToUTF8( pE->i_item_description[i],
+                        char *psz_dsc = EITConvertToUTF8(
+                                                          p_demux,
+                                                          pE->i_item_description[i],
                                                           pE->i_item_description_length[i],
                                                           p_sys->b_broken_charset );
-                        char *psz_itm = EITConvertToUTF8( pE->i_item[i], pE->i_item_length[i],
+                        char *psz_itm = EITConvertToUTF8(
+                                                          p_demux,
+                                                          pE->i_item[i], pE->i_item_length[i],
                                                           p_sys->b_broken_charset );
 
                         if( psz_dsc && psz_itm )
@@ -3252,6 +3325,19 @@ static bool PMTEsHasRegistration( demux_t *p_demux,
 
     assert( strlen(psz_tag) == 4 );
     return !memcmp( p_dr->p_data, psz_tag, 4 );
+}
+static bool PMTEsHasComponentTag( demux_t *p_demux,
+                                  const dvbpsi_pmt_es_t *p_es,
+                                  int i_component_tag )
+{
+    dvbpsi_descriptor_t *p_dr = PMTEsFindDescriptor( p_es, 0x52 );
+    if( !p_dr )
+        return false;
+    dvbpsi_stream_identifier_dr_t *p_si = dvbpsi_DecodeStreamIdentifierDr( p_dr );
+    if( !p_si )
+        return false;
+
+    return p_si->i_component_tag == i_component_tag;
 }
 static void PMTSetupEsISO14496( demux_t *p_demux, ts_pid_t *pid,
                                 const ts_prg_psi_t *prg, const dvbpsi_pmt_es_t *p_es )
@@ -3650,6 +3736,36 @@ static void PMTSetupEs0x06( demux_t *p_demux, ts_pid_t *pid,
         p_fmt->i_cat = AUDIO_ES;
         p_fmt->b_packetized = true;
         p_fmt->i_codec = VLC_CODEC_302M;
+    }
+    else if( PMTEsHasComponentTag( p_demux, p_es, 0x30 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x31 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x32 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x33 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x34 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x35 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x36 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x37 ) )
+    {
+        demux_sys_t *p_sys = p_demux->p_sys;
+        if( p_sys->b_support_arib )
+        {
+            es_format_t *p_fmt = &pid->es->fmt;
+            es_format_Init( p_fmt, SPU_ES, VLC_CODEC_ARIB_A );
+            p_fmt->psz_language = strndup ( "jpn", 3 );
+            p_fmt->psz_description = strdup( _("ARIB subtitles") );
+        }
+    }
+    else if( PMTEsHasComponentTag( p_demux, p_es, 0x87 ) ||
+             PMTEsHasComponentTag( p_demux, p_es, 0x88 ) )
+    {
+        demux_sys_t *p_sys = p_demux->p_sys;
+        if( p_sys->b_support_arib )
+        {
+            es_format_t *p_fmt = &pid->es->fmt;
+            es_format_Init( p_fmt, SPU_ES, VLC_CODEC_ARIB_C );
+            p_fmt->psz_language = strndup ( "jpn", 3 );
+            p_fmt->psz_description = strdup( _("ARIB subtitles") );
+        }
     }
     else
     {
