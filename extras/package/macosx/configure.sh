@@ -42,6 +42,7 @@ OPTIONS="
         --disable-sdl
         --disable-samplerate
         --disable-macosx-dialog-provider
+	--with-x=no
 "
 
 export CFLAGS
