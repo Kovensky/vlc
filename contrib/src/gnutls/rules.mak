@@ -18,6 +18,9 @@ gnutls: gnutls-$(GNUTLS_VERSION).tar.xz .sum-gnutls
 ifdef HAVE_WIN32
 	$(APPLY) $(SRC)/gnutls/gnutls-win32.patch
 endif
+ifdef HAVE_WIN64
+#	$(APPLY) $(SRC)/gnutls/gnutls-win64.patch
+endif
 ifdef HAVE_ANDROID
 	$(APPLY) $(SRC)/gnutls/no-create-time-h.patch
 endif

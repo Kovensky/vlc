@@ -1,0 +1,11 @@
+--- libdvbpsi/configure.orig	2011-11-04 00:55:01.000000000 +0900
++++ libdvbpsi/configure	2011-11-13 17:34:39.000000000 +0900
+@@ -11655,7 +11655,7 @@
+
+ if test "$release" = "true"
+ then
+-  CFLAGS="${CFLAGS} -O6"
++  CFLAGS="${CFLAGS} -O4"
+ else
+   CFLAGS="${CFLAGS} -O2"
+ fi

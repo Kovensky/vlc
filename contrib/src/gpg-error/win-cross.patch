@@ -1,0 +1,20 @@
+--- libgpg-error/src/mkerrcodes.c.orig	2008-08-26 21:45:58.000000000 +0900
++++ libgpg-error/src/mkerrcodes.c	2011-11-30 19:58:24.000000000 +0900
+@@ -50,7 +50,7 @@
+ main (int argc, char **argv)
+ {
+   int sorted;
+-  int i;
++  unsigned int i;
+
+   printf ("%s", header);
+   do
+@@ -72,7 +72,7 @@
+   while (!sorted);
+
+   for (i = 0; i < sizeof (err_table) / sizeof (err_table[0]); i++)
+-    printf ("%i\t%s\n", err_table[i].err, err_table[i].err_sym);
++    printf ("%u\t%s\n", err_table[i].err, err_table[i].err_sym);
+
+   return 0;
+ }

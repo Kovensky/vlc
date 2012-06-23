@@ -15,9 +15,10 @@ $(TARBALLS)/directx-oss.tar.bz2:
 $(TARBALLS)/dxva2api.h:
 	$(call download,$(DXVA2_URL))
 
-.sum-directx: directx-oss.tar.bz2 dxva2api.h
+#.sum-directx: directx-oss.tar.bz2 dxva2api.h
 
-.directx: directx-oss.tar.bz2 dxva2api.h .sum-directx
+#.directx: directx-oss.tar.bz2 dxva2api.h .sum-directx
+.directx: directx-oss.tar.bz2 dxva2api.h
 	mkdir -p -- "$(PREFIX)/include"
 	tar xvjf $< -C "$(PREFIX)/include"
 	$(CC) -E -include dxva2api.h - < /dev/null >& /dev/null || cp $(TARBALLS)/dxva2api.h "$(PREFIX)/include/"

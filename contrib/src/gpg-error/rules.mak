@@ -11,10 +11,13 @@ libgpg-error: libgpg-error-$(GPGERROR_VERSION).tar.bz2 .sum-gpg-error
 	$(UNPACK)
 ifdef HAVE_WIN32
 	$(APPLY) $(SRC)/gpg-error/windres-make.patch
+	$(APPLY) $(SRC)/gpg-error/win-cross.patch
 endif
 	$(MOVE)
 
 .gpg-error: libgpg-error
 	cd $< && $(HOSTVARS) ./configure $(HOSTCONF) --disable-nls --disable-shared --disable-languages
+	cd $< && rm po/pl.*
+	cd $< && rm po/ro.*
 	cd $< && $(MAKE) install
 	touch $@

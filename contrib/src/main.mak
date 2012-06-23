@@ -107,6 +107,8 @@ EXTRA_CFLAGS += -isysroot $(MACOSX_SDK) -mmacosx-version-min=$(MIN_OSX_VERSION) 
 EXTRA_LDFLAGS += -Wl,-syslibroot,$(MACOSX_SDK) -mmacosx-version-min=$(MIN_OSX_VERSION) -isysroot $(MACOSX_SDK) -DMACOSX_DEPLOYMENT_TARGET=$(MIN_OSX_VERSION)
 ifeq ($(ARCH),x86_64)
 EXTRA_CFLAGS += -m64
+EXTRA_CFLAGS += -mtune=core2 -march=core2
+#EXTRA_CFLAGS += -mtune=native -march=native
 EXTRA_LDFLAGS += -m64
 else
 EXTRA_CFLAGS += -m32

@@ -2,10 +2,10 @@
 REGEX_VERSION := 0.13
 REGEX_URL := $(CONTRIB_VIDEOLAN)/regex-$(REGEX_VERSION).tar.gz
 
-ifndef HAVE_WIN32
+#ifndef HAVE_WIN32
 # Part of POSIX.2001
-PKGS_FOUND += regex
-endif
+#PKGS_FOUND += regex
+#endif
 
 $(TARBALLS)/regex-$(REGEX_VERSION).tar.gz:
 	$(call download,$(REGEX_URL))

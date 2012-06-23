@@ -4,9 +4,9 @@ LIBXML2_VERSION := 2.9.0
 LIBXML2_URL := http://xmlsoft.org/sources/libxml2-$(LIBXML2_VERSION).tar.gz
 
 PKGS += libxml2
-ifeq ($(call need_pkg,"libxml-2.0"),)
-PKGS_FOUND += libxml2
-endif
+#ifeq ($(call need_pkg,"libxml-2.0"),)
+#PKGS_FOUND += libxml2
+#endif
 
 $(TARBALLS)/libxml2-$(LIBXML2_VERSION).tar.gz:
 	$(call download,$(LIBXML2_URL))
