@@ -796,8 +796,20 @@ static int Open( vlc_object_t *p_this )
     if( can_seek  )
     {
         GetFirstPCR( p_demux );
-        CheckPCR( p_demux );
-        GetLastPCR( p_demux );
+        if( p_sys->i_first_pcr < 0 )
+        {
+            msg_Err( p_demux, "cannot get first pcr." );
+        }
+        else
+        {
+            CheckPCR( p_demux );
+            GetLastPCR( p_demux );
+            if( p_sys->i_last_pcr < 0 )
+            {
+                msg_Err( p_demux, "cannot get last pcr." );
+            }
+        }
+        msg_Dbg( p_demux, "i_first_pcr[%d] i_last_pcr[%d].", p_sys->i_first_pcr, p_sys->i_last_pcr );
     }
     if( p_sys->i_first_pcr < 0 || p_sys->i_last_pcr < 0 )
     {
@@ -2049,6 +2061,7 @@ static void GetFirstPCR( demux_t *p_demux )
     demux_sys_t *p_sys = p_demux->p_sys;
 
     int64_t i_initial_pos = stream_Tell( p_demux->s );
+    int64_t i_last_pos = i_initial_pos + p_sys->i_packet_size * 4500; /* FIXME if the value is not reasonable, please change it. */
 
     if( stream_Seek( p_demux->s, 0 ) )
         return;
@@ -2069,6 +2082,8 @@ static void GetFirstPCR( demux_t *p_demux )
         }
         block_Release( p_pkt );
         if( p_sys->i_first_pcr >= 0 )
+            break;
+        if( i_last_pos < stream_Tell( p_demux->s ) )
             break;
     }
     stream_Seek( p_demux->s, i_initial_pos );
