@@ -302,8 +302,7 @@ static void create_arib_basedir( decoder_t *p_dec )
     }
 
     struct stat st;
-    vlc_stat( psz_arib_base_dir, &st );
-    if( !S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode) )
+    if( vlc_stat( psz_arib_base_dir, &st ) )
     {
         if( vlc_mkdir( psz_arib_base_dir, 0777) != 0 )
         {
@@ -324,8 +323,7 @@ static void create_arib_datadir( decoder_t *p_dec )
     }
 
     struct stat st;
-    vlc_stat( psz_arib_data_dir, &st );
-    if( !S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode) )
+    if( vlc_stat( psz_arib_data_dir, &st ) )
     {
         if( vlc_mkdir( psz_arib_data_dir, 0777) == 0 )
         {
@@ -449,8 +447,7 @@ static FILE* open_image_file( decoder_t* p_dec, const char *psz_hash )
     }
 
     struct stat st;
-    vlc_stat( psz_image_file, &st );
-    if( !S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode) )
+    if( vlc_stat( psz_image_file, &st ) )
     {
         fp = vlc_fopen( psz_image_file, "wb" );
         if( fp == NULL )
