@@ -62,7 +62,7 @@ static subpicture_t *Decode( decoder_t *, block_t ** );
 #define HORIZONTAL_ADJUSTMENT_VALUE_TEXT N_("Horizontal adjustment value")
 #define HORIZONTAL_ADJUSTMENT_VALUE_LONGTEXT N_("Horizontal adjustment value. If plus value is set, showing subtitles right. If minus value is set, showing subtitles left.")
 #define VERTICAL_ADJUSTMENT_VALUE_TEXT N_("Vertical adjustment value")
-#define VERTICAL_ADJUSTMENT_VALUE_LONGTEXT N_("Horizontal adjustment value. If plus value is set, showing subtitles lower. If minus value is set, showing subtitles upper.")
+#define VERTICAL_ADJUSTMENT_VALUE_LONGTEXT N_("Vertical adjustment value. If plus value is set, showing subtitles lower. If minus value is set, showing subtitles upper.")
 
 vlc_module_begin ()
 #   define ARIBSUB_CFG_PREFIX "aribsub-"
