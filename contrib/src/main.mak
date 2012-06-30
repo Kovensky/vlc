@@ -97,8 +97,9 @@ endif
 
 ifdef HAVE_MACOSX
 MIN_OSX_VERSION=10.6
-CC=xcrun llvm-gcc-4.2
-CXX=xcrun llvm-g++-4.2
+CC=xcrun clang
+CXX=xcrun clang++
+OBJC=xcrun clang
 AR=xcrun ar
 LD=xcrun ld
 STRIP=xcrun strip
