@@ -2381,8 +2381,10 @@ static int ProcessLines( filter_t *p_filter,
                 if( FT_HAS_KERNING( p_current_face ) && i_glyph_last != 0 && i_glyph_index != 0 )
                 {
                     FT_Get_Kerning( p_current_face, i_glyph_last, i_glyph_index, ft_kerning_default, &kerning );
-                    if( p_glyph_style->i_spacing > 0 )
-                        kerning.x = (p_glyph_style->i_spacing / 4 ) << 6;
+                }
+                if( p_glyph_style->i_spacing > 0 && i_glyph_last != 0 && i_glyph_index != 0 )
+                {
+                    kerning.x = (p_glyph_style->i_spacing) << 6;
                 }
 
                 /* Get the glyph bitmap and its bounding box and all the associated properties */
