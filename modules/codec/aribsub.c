@@ -1151,11 +1151,6 @@ static subpicture_t *render( decoder_t *p_dec, block_t *p_block )
         {
             p_region->i_charleft_adj += p_buf_region->i_horadj;
             p_region->i_charbottom_adj += p_buf_region->i_veradj;
-            if( p_region->i_fontwidth < p_region->i_fontheight )
-            {
-                // adjustment for halfwidth font
-                p_region->i_charleft_adj -= p_buf_region->i_horint;
-            }
         }
         p_region->p_next = NULL;
         if( p_buf_region->p_next != NULL )

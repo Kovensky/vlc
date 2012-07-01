@@ -111,7 +111,6 @@ static void SubpictureTextUpdate(subpicture_t *subpic,
         r->p_style->i_font_size = p_region->i_fontheight;
         r->p_style->i_font_color = p_region->i_font_color;
         r->p_style->i_style_flags = 0;
-        r->p_style->i_style_flags |= STYLE_BOLD;
         if( p_region->i_fontwidth < p_region->i_fontheight )
         {
             r->p_style->i_style_flags |= STYLE_HALFWIDTH;
