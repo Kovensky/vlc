@@ -372,36 +372,35 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             i_horadj = 0;
             break;
         //case 0x3000: /* IDEOGRAPHIC SPACE */
-        //    i_veradj = decoder->i_fontheight * 2 / 3 ;
+        //    i_veradj = decoder->i_fontheight * 2 / 3;
         //    i_horadj = 0;
         //    break;
         case 0x3001: /* IDEOGRAPHIC COMMA */
         case 0x3002: /* IDEOGRAPHIC FULL STOP */
-            i_veradj = decoder->i_fontheight * 7 / 12 ;
+            i_veradj = decoder->i_fontheight * 1 / 2;
             i_horadj = 0;
             break;
         case 0x226A: /* MUCH LESS-THAN */
         case 0x226B: /* MUCH GREATER-THAN */
         //case 0x300A: /* LEFT DOUBLE ANGLE BRACKET */
         //case 0x300B: /* RIGHT DOUBLE ANGLE BRACKET */
-            i_veradj = decoder->i_fontheight * 1 / 4 ;
+            i_veradj = decoder->i_fontheight * 1 / 4;
             i_horadj = 0;
             break;
         case 0x300C: /* LEFT CORNER BRACKET */
         case 0x300E: /* LEFT WHITE CORNER BRACKET */
             i_veradj = 0;
-            i_horadj = decoder->i_fontwidth * 1 / 9;
+            i_horadj = decoder->i_fontwidth * 1 / 6;
             break;
         case 0x300D: /* RIGHT CORNER BRACKET */
         case 0x300F: /* RIGHT WHITE CORNER BRACKET */
-            //i_veradj = decoder->i_fontheight * 1 / 3 ;
-            i_veradj = 0;
+            i_veradj = decoder->i_fontheight * 1 / 6;
             i_horadj = 0;
             break;
         case 0x3063: /* HIRAGANA LETTER SMALL TU */
         case 0x30C3: /* KATAKANA LETTER SMALL TU */
             i_veradj = decoder->i_fontheight * 1 / 4;
-            i_horadj = decoder->i_fontwidth * 1 / 6;
+            i_horadj = 0;
             break;
         case 0x3041: /* HIRAGANA LETTER SMALL A */
         case 0x30A1: /* KATAKANA LETTER SMALL A */
@@ -429,7 +428,7 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             break;
         case 0x30FB: /* KATAKANA MIDDLE DOT */
             i_veradj = decoder->i_fontheight * 1 / 3;
-            i_horadj = decoder->i_fontwidth * 1 / 9;
+            i_horadj = decoder->i_fontwidth * 1 / 6;
             break;
         case 0xFF08: /* FULLWIDTH LEFT PARENTHESIS */
         case 0xFF09: /* FULLWIDTH RIGHT PARENTHESIS */
@@ -438,7 +437,7 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             break;
         case 0xFF0C: /* FULLWIDTH COMMA */
         case 0xFF0E: /* FULLWIDTH FULL STOP */
-            i_veradj = decoder->i_fontheight * 7 / 12 ;
+            i_veradj = decoder->i_fontheight * 1 / 2;
             i_horadj = 0;
             break;
         default:
@@ -488,11 +487,9 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
     }
     else
     {
-        if( p_region->i_veradj > i_veradj ||
-            p_region->i_horadj > i_horadj )
+        if( p_region->i_veradj > i_veradj )
         {
             p_region->i_veradj = i_veradj;
-            p_region->i_horadj = i_horadj;
         }
     }
     p_region->p_end = p_end;
