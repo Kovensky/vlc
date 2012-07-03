@@ -73,11 +73,11 @@ vlc_module_begin ()
     set_subcategory( SUBCAT_INPUT_SCODEC )
     set_callbacks( Open, Close )
 
-    add_bool( ARIBSUB_CFG_PREFIX "ignore_ruby", false, IGNORE_RUBY_TEXT, IGNORE_RUBY_LONGTEXT, true )
-    add_bool( ARIBSUB_CFG_PREFIX "ignore_position_adjustment", false, IGNORE_POSITION_ADJUSTMENT_TEXT, IGNORE_POSITION_ADJUSTMENT_LONGTEXT, true )
-    add_bool( ARIBSUB_CFG_PREFIX "replace_ellipsis", false, REPLACE_ELLIPSIS_TEXT, REPLACE_ELLIPSIS_LONGTEXT, true )
-    add_integer( ARIBSUB_CFG_PREFIX "horizontal_adjustment_value", 0, HORIZONTAL_ADJUSTMENT_VALUE_TEXT, HORIZONTAL_ADJUSTMENT_VALUE_LONGTEXT, true )
-    add_integer( ARIBSUB_CFG_PREFIX "vertical_adjustment_value", 0, VERTICAL_ADJUSTMENT_VALUE_TEXT, VERTICAL_ADJUSTMENT_VALUE_LONGTEXT, true )
+    add_bool( ARIBSUB_CFG_PREFIX "ignore-ruby", false, IGNORE_RUBY_TEXT, IGNORE_RUBY_LONGTEXT, true )
+    add_bool( ARIBSUB_CFG_PREFIX "ignore-position-adjustment", false, IGNORE_POSITION_ADJUSTMENT_TEXT, IGNORE_POSITION_ADJUSTMENT_LONGTEXT, true )
+    add_bool( ARIBSUB_CFG_PREFIX "replace-ellipsis", false, REPLACE_ELLIPSIS_TEXT, REPLACE_ELLIPSIS_LONGTEXT, true )
+    add_integer( ARIBSUB_CFG_PREFIX "horizontal-adjustment-value", 0, HORIZONTAL_ADJUSTMENT_VALUE_TEXT, HORIZONTAL_ADJUSTMENT_VALUE_LONGTEXT, true )
+    add_integer( ARIBSUB_CFG_PREFIX "vertical-adjustment-value", 0, VERTICAL_ADJUSTMENT_VALUE_TEXT, VERTICAL_ADJUSTMENT_VALUE_LONGTEXT, true )
 vlc_module_end ()
 
 
@@ -105,7 +105,7 @@ struct decoder_sys_t
     int               i_subtitle_data_size;
     unsigned char     *psz_subtitle_data;
 
-    char              *psz_fontfamily;
+    char              *psz_fontname;
     bool              b_ignore_ruby;
     bool              b_ignore_position_adjustment;
     bool              b_replace_ellipsis;
@@ -168,17 +168,17 @@ static int Open( vlc_object_t *p_this )
         p_sys->b_a_profile = false;
     p_sys->i_subtitle_data_size = 0;
     p_sys->psz_subtitle_data = NULL;
-    p_sys->psz_fontfamily = var_InheritString( p_this, "freetype-font" );
+    p_sys->psz_fontname = NULL;
     p_sys->b_ignore_ruby =
-        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "ignore_ruby" );
+        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "ignore-ruby" );
     p_sys->b_ignore_position_adjustment =
-        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "ignore_position_adjustment" );
+        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "ignore-position-adjustment" );
     p_sys->b_replace_ellipsis =
-        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "replace_ellipsis" );
+        var_InheritBool( p_this, ARIBSUB_CFG_PREFIX "replace-ellipsis" );
     p_sys->i_horizontal_adjustment_value =
-        var_InheritInteger( p_this, ARIBSUB_CFG_PREFIX "horizontal_adjustment_value" );
+        var_InheritInteger( p_this, ARIBSUB_CFG_PREFIX "horizontal-adjustment-value" );
     p_sys->i_vertical_adjustment_value =
-        var_InheritInteger( p_this, ARIBSUB_CFG_PREFIX "vertical_adjustment_value" );
+        var_InheritInteger( p_this, ARIBSUB_CFG_PREFIX "vertical-adjustment-value" );
 #ifdef ARIBSUB_GEN_DRCS_DATA
     p_sys->p_drcs_data = NULL;
 #endif //ARIBSUB_GEN_DRCS_DATA
@@ -196,8 +196,8 @@ static void free_all( decoder_t *p_dec )
     free( p_sys->psz_subtitle_data );
     p_sys->psz_subtitle_data = NULL;
 
-    free( p_sys->psz_fontfamily );
-    p_sys->psz_fontfamily = NULL;
+    free( p_sys->psz_fontname );
+    p_sys->psz_fontname = NULL;
 
     drcs_conversion_t *p_drcs_conv = p_sys->p_drcs_conv;
     while( p_drcs_conv != NULL )
@@ -217,11 +217,11 @@ static void Close( vlc_object_t *p_this )
     decoder_t     *p_dec = (decoder_t*) p_this;
     decoder_sys_t *p_sys = p_dec->p_sys;
 
-    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "ignore_ruby" );
-    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "ignore_position_adjustment" );
-    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "replace_ellipsis" );
-    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "horizontal_adjustment_value" );
-    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "vertical_adjustment_value" );
+    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "ignore-ruby" );
+    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "ignore-position-adjustment" );
+    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "replace-ellipsis" );
+    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "horizontal-adjustment-value" );
+    var_Destroy( p_this, ARIBSUB_CFG_PREFIX "vertical-adjustment-value" );
 
     free_all( p_dec );
     free( p_sys );
@@ -1135,7 +1135,7 @@ static subpicture_t *render( decoder_t *p_dec, block_t *p_block )
         p_region->psz_text = strdup( psz_text );
         free( psz_text );
         p_region->psz_html = NULL;
-        p_region->psz_fontname = p_sys->psz_fontfamily ? strdup( p_sys->psz_fontfamily ) : NULL;
+        p_region->psz_fontname = p_sys->psz_fontname ? strdup( p_sys->psz_fontname ) : NULL;
         p_region->i_font_color = p_buf_region->i_foreground_color;
         p_region->i_planewidth = p_buf_region->i_planewidth;
         p_region->i_planeheight = p_buf_region->i_planeheight;
