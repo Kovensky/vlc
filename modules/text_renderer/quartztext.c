@@ -320,6 +320,7 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
     VLC_UNUSED(p_chroma_list);
     filter_sys_t *p_sys = p_filter->p_sys;
     char         *psz_string;
+    char         *psz_fontname;
     int           i_font_alpha, i_font_size;
     uint32_t      i_font_color;
     bool          b_bold, b_uline, b_italic;
@@ -341,11 +342,14 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
     if (!psz_string || !*psz_string)
         return VLC_EGENERIC;
 
-    if (p_region_in->p_style) {
+    if (p_region_in->p_style)
+    {
+        psz_fontname = (p_region_in->p_style->psz_fontname) ? p_region_in->p_style->psz_fontname : p_sys->psz_font_name;
         i_font_color = VLC_CLIP(p_region_in->p_style->i_font_color, 0, 0xFFFFFF);
         i_font_alpha = VLC_CLIP(p_region_in->p_style->i_font_alpha, 0, 255);
         i_font_size  = VLC_CLIP(p_region_in->p_style->i_font_size, 0, 255);
-        if (p_region_in->p_style->i_style_flags) {
+        if (p_region_in->p_style->i_style_flags)
+        {
             if (p_region_in->p_style->i_style_flags & STYLE_BOLD)
                 b_bold = TRUE;
             if (p_region_in->p_style->i_style_flags & STYLE_ITALIC)
@@ -357,6 +361,7 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
         }
         i_spacing = VLC_CLIP(p_region_in->p_style->i_spacing, 0, 255);
     } else {
+        psz_fontname = p_sys->psz_font_name;
         i_font_color = p_sys->i_font_color;
         i_font_alpha = 255 - p_sys->i_font_opacity;
         i_font_size  = p_sys->i_font_size;
@@ -388,7 +393,7 @@ static int RenderText(filter_t *p_filter, subpicture_region_t *p_region_out,
         CFRelease(p_cfString);
         len = CFAttributedStringGetLength(p_attrString);
 
-        setFontAttributes(p_sys->psz_font_name, i_font_size, i_font_color, b_bold, b_italic, b_uline, b_halfwidth,
+        setFontAttributes(psz_fontname, i_font_size, i_font_color, b_bold, b_italic, b_uline, b_halfwidth,
                            i_spacing,
                            CFRangeMake(0, len), p_attrString);
 
