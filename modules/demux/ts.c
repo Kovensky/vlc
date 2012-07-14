@@ -3076,21 +3076,36 @@ static void EITCallBack( demux_t *p_demux,
         int64_t i_start;
         int i_duration;
         int i_min_age = 0;
+        int64_t i_tot_time = 0;
 
         i_start = EITConvertStartTime( p_evt->i_start_time );
+        i_duration = EITConvertDuration( p_evt->i_duration );
         if( p_sys->b_support_arib )
         {
+            if( p_sys->i_tdt_delta == 0 )
+                p_sys->i_tdt_delta = CLOCK_FREQ * (i_start + i_duration - 5) - mdate();
+
             //i_start -= 9 * 60 * 60; // JST -> UTC
             time_t timer = time( NULL );
-            i_start -= difftime( mktime( localtime( &timer ) ),
-                                 mktime( gmtime( &timer ) ) );
+            int64_t diff = difftime( mktime( localtime( &timer ) ),
+                                     mktime( gmtime( &timer ) ) );
+            i_start -= diff;
+            i_tot_time = (mdate() + p_sys->i_tdt_delta) / CLOCK_FREQ - diff;
         }
-        i_duration = EITConvertDuration( p_evt->i_duration );
 
         msg_Dbg( p_demux, "  * event id=%d start_time:%d duration=%d "
                           "running=%d free_ca=%d",
                  p_evt->i_event_id, (int)i_start, (int)i_duration,
                  p_evt->i_running_status, p_evt->b_free_ca );
+
+        if( p_sys->b_support_arib &&
+            p_evt->i_running_status == 0x00 &&
+            (i_start - 5 < i_tot_time &&
+             i_tot_time < i_start + i_duration + 5) )
+        {
+            p_evt->i_running_status = 0x04;
+            msg_Dbg( p_demux, "  EIT running status 0x00 -> 0x04" );
+        }
 
         for( p_dr = p_evt->p_first_descriptor; p_dr; p_dr = p_dr->p_next )
         {
@@ -3196,12 +3211,12 @@ static void EITCallBack( demux_t *p_demux,
         }
 
         /* */
-        if( i_start > 0 )
+        if( i_start > 0 && psz_name && psz_text)
             vlc_epg_AddEvent( p_epg, i_start, i_duration, psz_name, psz_text,
                               *psz_extra ? psz_extra : NULL, i_min_age );
 
         /* Update "now playing" field */
-        if( p_evt->i_running_status == 0x04 && i_start > 0 )
+        if( p_evt->i_running_status == 0x04 && i_start > 0  && psz_name && psz_text )
             vlc_epg_SetCurrent( p_epg, i_start );
 
         free( psz_name );
@@ -3294,7 +3309,7 @@ static void PSINewTableCallBack( demux_t *p_demux, dvbpsi_handle h,
 #endif
     }
     else if( p_demux->p_sys->pid[0x11].psi->i_sdt_version != -1 &&
-              i_table_id == 0x70 )  /* TDT */
+            (i_table_id == 0x70 /* TDT */ || i_table_id == 0x73 /* TOT */) )
     {
          msg_Dbg( p_demux, "PSINewTableCallBack: table 0x%x(%d) ext=0x%x(%d)",
                  i_table_id, i_table_id, i_extension, i_extension );
