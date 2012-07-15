@@ -371,10 +371,10 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             i_veradj = decoder->i_fontheight * 1 / 3;
             i_horadj = 0;
             break;
-        //case 0x3000: /* IDEOGRAPHIC SPACE */
-        //    i_veradj = decoder->i_fontheight * 2 / 3;
-        //    i_horadj = 0;
-        //    break;
+        case 0x3000: /* IDEOGRAPHIC SPACE */
+            i_veradj = decoder->i_fontheight * 2 / 3;
+            i_horadj = 0;
+            break;
         case 0x3001: /* IDEOGRAPHIC COMMA */
         case 0x3002: /* IDEOGRAPHIC FULL STOP */
             i_veradj = decoder->i_fontheight * 1 / 2;
@@ -399,7 +399,7 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             break;
         case 0x3063: /* HIRAGANA LETTER SMALL TU */
         case 0x30C3: /* KATAKANA LETTER SMALL TU */
-            i_veradj = decoder->i_fontheight * 1 / 4;
+            i_veradj = decoder->i_fontheight * 1 / 3;
             i_horadj = 0;
             break;
         case 0x3041: /* HIRAGANA LETTER SMALL A */
