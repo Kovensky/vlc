@@ -138,6 +138,11 @@ struct decoder_sys_t
     /* LOAS */
     bool b_latm_cfg;
     latm_mux_t latm;
+
+    /* ADTS */
+    /* store channels and sample-rate of last frame */
+    int  adts_channels;
+    int  adts_rate;
 };
 
 enum {
@@ -199,6 +204,7 @@ static int OpenPacketizer( vlc_object_t *p_this )
     date_Set( &p_sys->end_date, 0 );
     block_BytestreamInit( &p_sys->bytestream );
     p_sys->b_latm_cfg = false;
+    p_sys->adts_channels = p_sys->adts_rate = -1;
 
     /* Set output properties */
     p_dec->fmt_out.i_cat = AUDIO_ES;
@@ -321,6 +327,12 @@ static int ADTSSyncInfo( decoder_t * p_dec, const uint8_t * p_buf,
 {
     int i_profile, i_sample_rate_idx, i_frame_size;
     bool b_crc;
+    int  old_chans;
+    int  old_rate;
+    int  actual_channels;
+
+    old_chans = *pi_channels;
+    old_rate = *pi_sample_rate;
 
     /* Fixed header between frames */
     //int i_id = ( (p_buf[1] >> 3) & 0x01) ? 2 : 4; /* MPEG-2 or 4 */
@@ -343,10 +355,15 @@ static int ADTSSyncInfo( decoder_t * p_dec, const uint8_t * p_buf,
     //uint16_t buffer_fullness = ((p_buf[5] & 0x1f) << 6) | (p_buf[6] >> 2);
     unsigned short i_raw_blocks_in_frame = p_buf[6] & 0x03;
 
+    /* dirty-hack for ARIB dual-monoral */
+    actual_channels = *pi_channels;
     if( !*pi_sample_rate || !i_frame_size )
     {
         msg_Warn( p_dec, "Invalid ADTS header" );
         return 0;
+    }
+    if( *pi_channels == 0 ){
+        *pi_channels = 2;
     }
 
     *pi_frame_length = 1024;
@@ -355,7 +372,7 @@ static int ADTSSyncInfo( decoder_t * p_dec, const uint8_t * p_buf,
     {
         if( b_crc )
         {
-            msg_Warn( p_dec, "ADTS CRC not supported" );
+            //msg_Warn( p_dec, "ADTS CRC not supported" );
             //uint16_t crc = (p_buf[7] << 8) | p_buf[8];
         }
     }
@@ -393,9 +410,11 @@ static int ADTSSyncInfo( decoder_t * p_dec, const uint8_t * p_buf,
 
 
     /* Build the decoder specific info header */
-    if( !p_dec->fmt_out.i_extra )
+    if( !p_dec->fmt_out.i_extra || (*pi_sample_rate != old_rate) || (actual_channels != old_chans) )
     {
-        p_dec->fmt_out.p_extra = malloc( 2 );
+        if( !p_dec->fmt_out.p_extra ){
+            p_dec->fmt_out.p_extra = malloc( 2 );
+        }
         if( !p_dec->fmt_out.p_extra )
         {
             p_dec->fmt_out.i_extra = 0;
@@ -405,7 +424,7 @@ static int ADTSSyncInfo( decoder_t * p_dec, const uint8_t * p_buf,
         ((uint8_t *)p_dec->fmt_out.p_extra)[0] =
             (i_profile + 1) << 3 | (i_sample_rate_idx >> 1);
         ((uint8_t *)p_dec->fmt_out.p_extra)[1] =
-            ((i_sample_rate_idx & 0x01) << 7) | (*pi_channels <<3);
+            ((i_sample_rate_idx & 0x01) << 7) | (actual_channels << 3);
     }
 
     /* ADTS header length */
@@ -981,6 +1000,7 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
         if( (*pp_block)->i_flags&BLOCK_FLAG_CORRUPTED )
         {
             p_sys->i_state = STATE_NOSYNC;
+            p_sys->adts_channels = p_sys->adts_rate = -1;
             block_BytestreamEmpty( &p_sys->bytestream );
         }
         date_Set( &p_sys->end_date, 0 );
@@ -1058,11 +1078,17 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
                 }
 
                 /* Check if frame is valid and get frame info */
+                p_sys->i_channels = p_sys->adts_channels;
+                p_sys->i_rate = p_sys->adts_rate;
                 p_sys->i_frame_size = ADTSSyncInfo( p_dec, p_header,
                                                     &p_sys->i_channels,
                                                     &p_sys->i_rate,
                                                     &p_sys->i_frame_length,
                                                     &p_sys->i_header_size );
+                if( p_sys->i_frame_size > 0 ){
+                     p_sys->adts_channels = p_sys->i_channels;
+                     p_sys->adts_rate = p_sys->i_rate;
+                }
             }
             else
             {
@@ -1084,6 +1110,7 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
                 msg_Dbg( p_dec, "emulated sync word" );
                 block_SkipByte( &p_sys->bytestream );
                 p_sys->i_state = STATE_NOSYNC;
+                p_sys->adts_rate = p_sys->adts_channels = -1;
                 break;
             }
 
@@ -1095,6 +1122,7 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
             if( p_sys->bytestream.p_block == NULL )
             {
                 p_sys->i_state = STATE_NOSYNC;
+                p_sys->adts_rate = p_sys->adts_channels = -1;
                 block_BytestreamFlush( &p_sys->bytestream );
                 return NULL;
             }
@@ -1117,6 +1145,7 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
                 msg_Dbg( p_dec, "emulated sync word "
                          "(no sync on following frame)" );
                 p_sys->i_state = STATE_NOSYNC;
+                p_sys->adts_rate = p_sys->adts_channels = -1;
                 block_SkipByte( &p_sys->bytestream );
                 break;
             }
@@ -1169,6 +1198,7 @@ static block_t *PacketizeStreamBlock( decoder_t *p_dec, block_t **pp_block )
                     block_Release( p_out_buffer );
                     p_out_buffer = NULL;
                     p_sys->i_state = STATE_NOSYNC;
+                    p_sys->adts_rate = p_sys->adts_channels = -1;
                     break;
                 }
             }
@@ -1196,7 +1226,8 @@ static void SetupOutput( decoder_t *p_dec, block_t *p_block )
 {
     decoder_sys_t *p_sys = p_dec->p_sys;
 
-    if( p_dec->fmt_out.audio.i_rate != p_sys->i_rate )
+    if( (p_dec->fmt_out.audio.i_rate != p_sys->i_rate) ||
+            (p_dec->fmt_out.audio.i_channels != p_sys->i_channels) )
     {
         msg_Info( p_dec, "AAC channels: %d samplerate: %d",
                   p_sys->i_channels, p_sys->i_rate );
