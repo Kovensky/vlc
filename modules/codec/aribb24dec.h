@@ -380,6 +380,8 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
             i_veradj = decoder->i_fontheight * 1 / 2;
             i_horadj = 0;
             break;
+        case 0xFF1C: /* FULLWIDTH LESS-THAN SIGN */
+        case 0xFF1E: /* FULLWIDTH GREATER-THAN SIGN */
         case 0x226A: /* MUCH LESS-THAN */
         case 0x226B: /* MUCH GREATER-THAN */
         //case 0x300A: /* LEFT DOUBLE ANGLE BRACKET */
