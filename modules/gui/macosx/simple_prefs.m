@@ -1114,10 +1114,15 @@ static inline void save_module_list(intf_thread_t * p_intf, id object, const cha
 - (IBAction)showFontPicker:(id)sender
 {
     char * font = config_GetPsz(p_intf, "freetype-font");
-    NSString * fontName = font ? @(font) : nil;
+    NSString * fontFamilyName = font ? @(font) : nil;
+    //NSString * fontName = font ? @(font) : nil;
     free(font);
-    if (fontName) {
-        NSFont * font = [NSFont fontWithName:fontName size:0.0];
+    if (fontFamilyName)
+    //if (fontName)
+    {
+	NSFontDescriptor * fd = [NSFontDescriptor fontDescriptorWithFontAttributes:nil];
+        NSFont * font = [NSFont fontWithDescriptor:[fd fontDescriptorWithFamily:fontFamilyName] textTransform:nil];
+        //NSFont * font = [NSFont fontWithName:fontName size:0.0];
         [[NSFontManager sharedFontManager] setSelectedFont:font isMultiple:NO];
     }
     [[NSFontManager sharedFontManager] setTarget: self];
@@ -1127,7 +1132,8 @@ static inline void save_module_list(intf_thread_t * p_intf, id object, const cha
 - (void)changeFont:(id)sender
 {
     NSFont * font = [sender convertFont:[[NSFontManager sharedFontManager] selectedFont]];
-    [o_osd_font_fld setStringValue:[font fontName]];
+    [o_osd_font_fld setStringValue:[font familyName]];
+    //[o_osd_font_fld setStringValue:[font fontName]];
     [self osdSettingChanged:self];
 }
 
