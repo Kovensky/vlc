@@ -11,11 +11,13 @@ endif
 $(TARBALLS)/fontconfig-$(FONTCONFIG_VERSION).tar.gz:
 	$(call download,$(FONTCONFIG_URL))
 
-.sum-fontconfig: fontconfig-$(FONTCONFIG_VERSION).tar.gz
+#.sum-fontconfig: fontconfig-$(FONTCONFIG_VERSION).tar.gz
 
-fontconfig: fontconfig-$(FONTCONFIG_VERSION).tar.gz .sum-fontconfig
+#fontconfig: fontconfig-$(FONTCONFIG_VERSION).tar.gz .sum-fontconfig
+fontconfig: fontconfig-$(FONTCONFIG_VERSION).tar.gz
 	$(UNPACK)
 ifdef HAVE_WIN32
+	$(APPLY) $(SRC)/fontconfig/fontconfig-march.patch
 	$(APPLY) $(SRC)/fontconfig/fontconfig-win32.patch
 	$(APPLY) $(SRC)/fontconfig/fontconfig-noxml2.patch
 endif
@@ -37,8 +39,8 @@ endif
 
 ifdef HAVE_MACOSX
 FONTCONFIG_CONF += \
-	--with-cache-dir=~/Library/Caches/fontconfig \
-	--with-confdir=/usr/X11/lib/X11/fonts \
+	--with-cache-dir=~/.fontconfig \
+	--with-baseconfigdir=/etc/fonts \
 	--with-default-fonts=/System/Library/Fonts \
 	--with-add-fonts=/Library/Fonts,~/Library/Fonts
 # libxml2 without pkg-config...
@@ -59,7 +61,6 @@ ifndef HAVE_MACOSX
 else
 	cd $< && $(MAKE) install-exec
 	cd $</fontconfig && $(MAKE) install-data
-	sed -e 's%/usr/lib/libiconv.la%%' -i.orig $(PREFIX)/lib/libfontconfig.la
 	cp $</fontconfig.pc $(PREFIX)/lib/pkgconfig/
 endif
 	touch $@
