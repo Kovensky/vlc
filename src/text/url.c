@@ -170,6 +170,19 @@ char *vlc_path2uri (const char *path, const char *scheme)
     path = p;
 #endif
 
+#if defined( __APPLE__ )
+    /* Mac OS X uses Unicode for their files and folder name with HFS+:
+     * Unicode Normalization Form D (NFD) (with some modification).
+     * But simply converting to NFC causes some problem.
+     * So using UTF-8-MAC, encoding for HFS+, to convert to UTF-8.
+     *
+     * Note: UTF-8-MAC is only implemented for built-in iconv on Mac OS X.
+     */
+    char* psz_tmp_path = FromCharset("UTF-8-MAC", path, strlen(path));
+    strcpy(path, psz_tmp_path);
+    free(psz_tmp_path);
+#endif
+
 #if defined( WIN32 ) || defined( __OS2__ )
     /* Drive letter */
     if (isalpha ((unsigned char)path[0]) && (path[1] == ':'))
