@@ -368,6 +368,8 @@ static int decoder_push( arib_decoder_t *decoder, unsigned int uc )
         case 0x2026: /* HORIZONTAL ELLIPSIS */
         case 0x22EF: /* MIDLINE HORIZONTAL ELLIPSIS */
         case 0x2192: /* RIGHTWARDS ARROW */
+        case 0x2212: /* MINUS SIGN */
+        case 0xFF0D: /* FULLWIDTH MINUS SIGN */
             i_veradj = decoder->i_fontheight * 1 / 3;
             i_horadj = 0;
             break;
