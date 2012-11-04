@@ -7,12 +7,19 @@ $(TARBALLS)/glew-$(GLEW_VERSION).tar.gz:
 
 .sum-glew: glew-$(GLEW_VERSION).tar.gz
 
+ifdef HAVE_WIN32
+MINGWLIBDIR := $(shell dirname $(shell which $(CC)))/../$(HOST)/lib
+endif
+
 glew: glew-$(GLEW_VERSION).tar.gz .sum-glew
 	$(UNPACK)
 ifdef HAVE_WIN32
 	$(APPLY) $(SRC)/glew/win32.patch
 endif
 	$(MOVE)
+ifdef HAVE_WIN32
+	cd $@ && sed -e 's%-L/mingw/lib%-L$(MINGWLIBDIR)%' -i.orig config/Makefile.mingw
+endif
 
 .glew: glew
 	cd $< && $(HOSTVARS) CFLAGS="$(CFLAGS) -DGLEW_STATIC" $(MAKE)
