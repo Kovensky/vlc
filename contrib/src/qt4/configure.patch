@@ -1,0 +1,11 @@
+--- qt4/configure.orig	2012-09-21 22:18:38.000000000 +0900
++++ qt4/configure	2012-09-21 22:19:04.000000000 +0900
+@@ -879,7 +879,7 @@
+ CFG_MAC_ARCHS=
+ MAC_CONFIG_TEST_COMMANDLINE=  # used to make the configure tests run with the correct arch's and SDK settings
+ CFG_MAC_DWARF2=auto
+-CFG_MAC_XARCH=auto
++CFG_MAC_XARCH=no
+ CFG_MAC_CARBON=no
+ CFG_MAC_COCOA=yes
+ COMMANDLINE_MAC_CARBON=no

@@ -1,0 +1,10 @@
+--- qt4/src/corelib/tools/qsimd.cpp.orig	2012-09-11 10:36:50.000000000 +0900
++++ qt4/src/corelib/tools/qsimd.cpp	2012-10-01 02:12:15.000000000 +0900
+@@ -47,7 +47,7 @@
+ #include <windows.h>
+ #endif
+
+-#if defined(Q_OS_WIN64) && !defined(Q_CC_GNU)
++#if defined(Q_OS_WIN64)
+ #include <intrin.h>
+ #endif
