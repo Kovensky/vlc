@@ -205,7 +205,7 @@ case "${host_os}" in
     AC_CHECK_TOOL(WINDRES, windres, :)
     AC_CHECK_TOOL(OBJCOPY, objcopy, :)
     AH_TOP([#if defined(WIN32) && !defined(_WIN32_WINNT)])
-    AH_TOP([# define _WIN32_WINNT 0x0502 /* Windows XP SP2 */])
+    AH_TOP([# define _WIN32_WINNT 0x0600 /* Windows XP SP2 */])
     AH_TOP([#endif])
     AC_DEFINE([_WIN32_IE], 0x0600, [Define to '0x0600' for IE 6.0 (and shell) APIs.])
     AC_DEFINE([_UNICODE], [1], [Define to 1 for Unicode (Wide Chars) APIs.])
@@ -231,6 +231,7 @@ case "${host_os}" in
         LDFLAGS="${LDFLAGS} -Wl,--nxcompat -Wl,--no-seh -Wl,--dynamicbase"
 
         VLC_ADD_LIBS([libvlccore],[-lwinmm])
+	VLC_ADD_LIBS([libvlccore],[-liphlpapi])
         VLC_ADD_LDFLAGS([vlc],[-mwindows])
         VLC_ADD_LIBS([win32text],[-lgdi32])
         VLC_ADD_LIBS([vcdx],[-lwinmm])

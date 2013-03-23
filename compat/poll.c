@@ -27,11 +27,9 @@
 #include <errno.h>
 
 #ifdef WIN32
-# ifdef FD_SETSIZE
-/* Too late for #undef FD_SETSIZE to work: fd_set is already defined. */
-#  error Header inclusion order compromised!
+# ifndef FD_SETSIZE
+#  define FD_SETSIZE 0
 # endif
-# define FD_SETSIZE 0
 # include <winsock2.h>
 #else
 # include <sys/time.h>

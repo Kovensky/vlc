@@ -295,7 +295,12 @@ struct if_nameindex
     char    *if_name;
 };
 # ifndef HAVE_IF_NAMETOINDEX
-#  define if_nametoindex(name)   atoi(name)
+#  if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+#   include <winsock2.h>
+#   include <iphlpapi.h>
+#  else
+#   define if_nametoindex(name)   atoi(name)
+#  endif
 # endif
 # define if_nameindex()         (errno = ENOBUFS, NULL)
 # define if_freenameindex(list) (void)0
