@@ -520,7 +520,11 @@ static void save_drcs_pattern_data_image(
         pp_image[j] = png_malloc( png_ptr, i_width * sizeof(png_byte) );
     }
 
-    int i_bits_per_pixel = ceil( log2( ( i_depth ) ) );
+#if defined( __ANDROID__ )
+    int i_bits_per_pixel = ceil( log( i_depth ) / log( 2 ) );
+#else
+    int i_bits_per_pixel = ceil( log2( i_depth ) );
+#endif
 
     bs_t bs;
     bs_init( &bs, p_patternData, i_width * i_height * i_bits_per_pixel / 8 );
