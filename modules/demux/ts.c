@@ -167,7 +167,7 @@ vlc_module_begin ()
 
     add_bool( "ts-split-es", true, SPLIT_ES_TEXT, SPLIT_ES_LONGTEXT, false )
     add_bool( "ts-seek-percent", false, SEEK_PERCENT_TEXT, SEEK_PERCENT_LONGTEXT, true )
-    add_bool( "ts-support-arib", false, SUPPORT_ARIB_TEXT, SUPPORT_ARIB_LONGTEXT, true )
+    add_bool( "ts-support-arib", true, SUPPORT_ARIB_TEXT, SUPPORT_ARIB_LONGTEXT, false )
 
     add_obsolete_bool( "ts-silent" );
 
