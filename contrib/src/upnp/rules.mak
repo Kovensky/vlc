@@ -19,7 +19,9 @@ upnp: libupnp-$(UPNP_VERSION).tar.bz2 .sum-upnp
 ifdef HAVE_WIN32
 	$(APPLY) $(SRC)/upnp/libupnp-configure.patch
 	$(APPLY) $(SRC)/upnp/libupnp-win32.patch
+ifdef HAVE_WIN32
 	$(APPLY) $(SRC)/upnp/libupnp-win64.patch
+endif
 endif
 	$(APPLY) $(SRC)/upnp/libupnp-ipv6.patch
 	$(APPLY) $(SRC)/upnp/miniserver.patch

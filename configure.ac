@@ -722,6 +722,9 @@ AS_IF([test "${SYS}" != "mingw32"], [
   ])
 ])
 AC_SUBST(LIBPTHREAD)
+if test "${SYS}" = "mingw32" -a "${host_vendor}" = "w64"; then
+  VLC_ADD_LIBS([libvlccore],[-lpthread])
+fi
 
 dnl Check for headers
 AC_CHECK_HEADERS([search.h])
@@ -2861,9 +2864,6 @@ AS_IF( [test "${enable_zvbi}" != "no"],[
     PKG_CHECK_MODULES(ZVBI, [zvbi-0.2 >= 0.2.28],
         [
           VLC_ADD_LIBS([zvbi],[$ZVBI_LIBS])
-          if test "${SYS}" = "mingw32"; then
-              VLC_ADD_LIBS([zvbi],[ -lpthreadGC2])
-          fi
           VLC_ADD_CFLAGS([zvbi],[$ZVBI_CFLAGS])
           VLC_ADD_PLUGIN([zvbi])
           AC_DEFINE(ZVBI_COMPILED, 1, [Define if the zvbi module is built])

@@ -1,41 +1,65 @@
---- libupnp/threadutil/inc/ThreadPool.h	2011-01-20 07:46:57.000000000 +0100
-+++ libupnp.new/threadutil/inc/ThreadPool.h	2011-09-23 01:36:12.000000000 +0200
-@@ -45,6 +45,7 @@
- #include <errno.h>
+--- libupnp/threadutil/inc/ithread.h.orig	2011-04-03 11:50:36.000000000 +0900
++++ libupnp/threadutil/inc/ithread.h	2011-12-22 07:27:25.000000000 +0900
+@@ -198,7 +198,7 @@
+ static UPNP_INLINE int ithread_initialize_library(void) {
+	int ret = 0;
 
- #ifdef WIN32
-+	#ifndef _TIMEZONE_DEFINED
- 	#include <time.h>
- 	struct timezone
- 	{
-@@ -52,6 +53,7 @@
- 		int  tz_dsttime;     /* type of dst correction */
- 	};
- 	int gettimeofday(struct timeval *tv, struct timezone *tz);
-+	#endif
- #else /* WIN32 */
- 	#include <sys/param.h>
- 	#include <sys/time.h> /* for gettimeofday() */
---- libupnp-1.6.16/upnp/inc/upnp.h.orig	2012-03-22 00:15:38.000000000 +0100
-+++ libupnp-1.6.16/upnp/inc/upnp.h	2012-03-28 18:58:55.043642000 +0200
-@@ -61,6 +61,20 @@
- 	/* Other systems ??? */
+-#if defined(WIN32) && defined(PTW32_STATIC_LIB)
++#if 0
+	ret = !pthread_win32_process_attach_np();
  #endif
+
+@@ -220,7 +220,7 @@
+ static UPNP_INLINE int ithread_cleanup_library(void) {
+	int ret = 0;
+
+-#if defined(WIN32) && defined(PTW32_STATIC_LIB)
++#if 0
+	ret = !pthread_win32_process_detach_np();
+ #endif
+
+@@ -242,7 +242,7 @@
+ static UPNP_INLINE int ithread_initialize_thread(void) {
+	int ret = 0;
+
+-#if defined(WIN32) && defined(PTW32_STATIC_LIB)
++#if 0
+	ret = !pthread_win32_thread_attach_np();
+ #endif
+
+@@ -264,7 +264,7 @@
+ static UPNP_INLINE int ithread_cleanup_thread(void) {
+	int ret = 0;
+
+-#if defined(WIN32) && defined(PTW32_STATIC_LIB)
++#if 0
+	ret = !pthread_win32_thread_detach_np();
+ #endif
+
+--- libupnp/threadutil/src/ThreadPool.c.orig	2011-04-03 11:50:36.000000000 +0900
++++ libupnp/threadutil/src/ThreadPool.c	2011-12-22 07:31:29.000000000 +0900
+@@ -414,7 +414,9 @@
+	struct timeval t;
+
+	gettimeofday(&t, NULL);
+-#if defined(WIN32)
++#if defined(WIN32)
++	srand((unsigned int)t.tv_usec + (unsigned int)ithread_get_current_thread_id());
++#elif 0
+	srand((unsigned int)t.tv_usec + (unsigned int)ithread_get_current_thread_id().p);
+ #elif defined(BSD) || defined(__OSX__) || defined(__APPLE__) || defined(__FreeBSD_kernel__)
+	srand((unsigned int)t.tv_usec + (unsigned int)ithread_get_current_thread_id());
  
-+#   if defined( __MINGW32__ )
-+#       if !defined( _OFF_T_ )
-+            typedef long long _off_t;
-+            typedef _off_t off_t;
-+#           define _OFF_T_
-+#       else
-+#           ifdef off_t
-+#               undef off_t
-+#           endif
-+#           define off_t long long
-+#       endif
-+#   endif
-+
-+
- #define LINE_SIZE  (size_t)180
- #define NAME_SIZE  (size_t)256
- #define MNFT_NAME_SIZE  64
+--- upnp/configure.ac.orig	2011-12-22 21:38:01.000000000 +0900
++++ upnp/configure.ac	2011-12-22 21:39:31.000000000 +0900
+@@ -575,8 +575,8 @@
+ #	[],
+ #	[AC_MSG_ERROR([POSIX threads are required to build this program])])
+ #
+-PTHREAD_LIBS=" -lpthreadGC2 -lws2_32"
+-PTHREAD_CFLAGS=" -DPTW32_STATIC_LIB -DUPNP_STATIC_LIB"
++PTHREAD_LIBS=" -lpthread -lws2_32 -lIphlpapi"
++PTHREAD_CFLAGS=" -DUPNP_STATIC_LIB"
+ # Update environment variables for pthreads
+ #
+ #CC="$PTHREAD_CC"

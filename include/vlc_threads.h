@@ -34,8 +34,17 @@
  *
  */
 
+#if defined(__MINGW32__) && defined(__MINGW64_VERSION_MAJOR) && defined(__MINGW64_VERSION_MINOR)
+#define HAVE_MINGW_W64
+#endif
+
 #if defined (WIN32)
 # include <process.h>
+# if defined(HAVE_MINGW_W64) /*HAVE_MINGW_W64*/
+#    undef DLL_EXPORT
+#    include <pthread.h>
+#    include <pthread_unistd.h>
+# endif
 # ifndef ETIMEDOUT
 #  define ETIMEDOUT 10060 /* This is the value in winsock.h. */
 # endif

@@ -19,7 +19,11 @@ zvbi: zvbi-$(ZVBI_VERSION).tar.bz2 .sum-zvbi
 	$(APPLY) $(SRC)/zvbi/zvbi-ioctl.patch
 	$(APPLY) $(SRC)/zvbi/zvbi-png15.patch
 ifdef HAVE_WIN32
+ifdef HAVE_MINGW_W64
+	$(APPLY) $(SRC)/zvbi/zvbi-win64.patch
+else
 	$(APPLY) $(SRC)/zvbi/zvbi-win32.patch
+endif
 endif
 	$(MOVE)
 
@@ -40,7 +44,12 @@ endif
 
 .zvbi: zvbi
 	$(RECONF)
+ifdef HAVE_MACOSX
+	#cd $< && $(HOSTVARS) CFLAGS="$(ZVBI_CFLAGS)" CC=gcc ./configure $(ZVBICONF)
+	cd $< && $(HOSTVARS) CFLAGS="$(ZVBI_CFLAGS)" CC=llvm-gcc ./configure $(ZVBICONF)
+else
 	cd $< && $(HOSTVARS) CFLAGS="$(ZVBI_CFLAGS)" ./configure $(ZVBICONF)
+endif
 	cd $</src && $(MAKE) install
 	cd $< && $(MAKE) SUBDIRS=. install
 	sed -i.orig -e "s/\/[^ ]*libiconv.a/-liconv/" $(PREFIX)/lib/pkgconfig/zvbi-0.2.pc

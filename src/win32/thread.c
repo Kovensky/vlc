@@ -159,6 +159,7 @@ void vlc_mutex_unlock (vlc_mutex_t *p_mutex)
     LeaveCriticalSection (&p_mutex->mutex);
 }
 
+#ifndef CLOCK_REALTIME
 /*** Condition variables ***/
 enum
 {
@@ -166,6 +167,7 @@ enum
     CLOCK_MONOTONIC,
     CLOCK_REALTIME,
 };
+#endif
 
 static void vlc_cond_init_common (vlc_cond_t *p_condvar, unsigned clock)
 {
