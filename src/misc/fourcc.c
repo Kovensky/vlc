@@ -1415,10 +1415,10 @@ static const staticentry_t p_list_spu[] = {
         A("cvd "),
 
     B(VLC_CODEC_ARIB_A, "ARIB subtitles (A-profile)"),
-        A("arba "),
+        A("arba"),
 
     B(VLC_CODEC_ARIB_C, "ARIB subtitles (C-profile)"),
-        A("arba "),
+        A("arbc"),
 
     B(VLC_CODEC_BD_PG, "BD subtitles"),
         A("bdpg"),
