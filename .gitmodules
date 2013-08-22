@@ -1,0 +1,3 @@
+[submodule "vlc-aribsub"]
+	path = vlc-aribsub
+	url = https://github.com/nkoriyama/vlc-aribsub
