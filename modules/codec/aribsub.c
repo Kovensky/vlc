@@ -1130,6 +1130,9 @@ static subpicture_t *render( decoder_t *p_dec, block_t *p_block )
         free( psz_text );
         p_region->psz_html = NULL;
         p_region->psz_fontname = p_sys->psz_fontname ? strdup( p_sys->psz_fontname ) : NULL;
+#ifdef _WIN32
+        if (!p_region->psz_fontname) p_region->psz_fontname = "MS UI Gothic";
+#endif
         p_region->i_font_color = p_buf_region->i_foreground_color;
         p_region->i_planewidth = p_buf_region->i_planewidth;
         p_region->i_planeheight = p_buf_region->i_planeheight;
